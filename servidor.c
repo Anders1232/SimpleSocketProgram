@@ -6,6 +6,7 @@
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <pthread.h>
 
 #include "ArgumentAnalizer.h"
 
@@ -17,6 +18,13 @@ typedef struct sockaddr_in SocketAddress;
 #define MODE_UDP 1
 #define MODE_TCP 2
 
+struct serverConnetion
+{
+	FileDescriptor connectionFD;
+	SocketAddress clientAddress;
+};
+typedef struct serverConnetion ServerConnection;
+
 void Error(const char *msg)
 {
 	perror(msg);
@@ -25,6 +33,7 @@ void Error(const char *msg)
 
 void UdpServer(int serverPort);
 void TcpServer(int serverPort);
+void* ServerConnection(void*);
 
 int main(int argc, char *argv[])
 {
@@ -76,8 +85,48 @@ void TcpServer(int serverPort)
 {
 	FileDescriptor socketFD, socketConnectionFD;
 	int clientAddressLenght, bytesReadOrWritten;
-	socklen_t clilen;
+	socklen_t clientSocketLenght;
 	char buffer[BUFFER_SIZE];
-	SocketAddress serverAddress, clienteAddress;
+	SocketAddress serverAddress, clientAddress;
+	
+	socketFD= socket(AF_INET, SOCK_STREAM, 0);
+	if (socketFD < 0)
+	{
+		Error("[ERROR] Fail opening socket\n");
+	}
+	bzero((char *) &serverAddress, sizeof(serverAddress));
+	serverAddress.sin_family= AF_INET;
+	serverAddress.sin_addr.s_addr= INADDR_ANY;
+	serverAddress.sin_port = htons(serverPort);//htons = host to network endian
+	if(0 > ( bind(socketFD, (struct sockaddr *) &serverAddress, sizeof(serverAddress) ) ) )
+	{
+		Error("[ERROR] Binding failed\n");
+	}
+	listen(socketConnectionFD,5);
+	clilen = sizeof(cli_addr);
+	socketConnectionFD = accept(socketFD, (struct sockaddr *) &clientAddress, &clientSocketLenght);
+	ServerConnection *sc= malloc(sizeof(ServerConnection));
+	if(NULL == sc)
+	{
+		Error("[ERROR] Alocation memory error\n");
+	}
+	sc.connectionFD= socketConnectionFD;
+	sc.clientAddress= clientAddress;
+	pthread_create();
+	if(socketConnectionFD < 0)
+	{
+		error("[ERROR] Error on accept\n");
+	}
+	bzero(buffer,BUFFER_SIZE);
+	bytesReadOrWritten= read(socketConnectionFD, buffer, BUFFER_SIZE-1);
+	if (n < 0)
+	{
+		Error("[ERROR] Error reading from socket\n");
+	}
+	printf("Recieved message: %s\n",buffer);
 }
 
+void* ServerConnection(void* arg)
+{
+	
+}
