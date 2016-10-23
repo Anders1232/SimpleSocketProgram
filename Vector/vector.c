@@ -1,5 +1,7 @@
 #include"vector.h"
 #include<stdio.h>
+#include<stdlib.h>
+#include<string.h>
 
 Vector* NewVector(int elementSize)
 {
@@ -11,7 +13,7 @@ Vector* NewVector(int elementSize)
 	}
 	ret->elementSize= elementSize;
 	ret->numberOfElements=0;
-	ret->capacity= 0
+	ret->capacity= 0;
 	ret->elements= NULL;
 	return ret;
 }
@@ -22,24 +24,30 @@ static void Resize(Vector * vec)
 	vec->elements= realloc(vec->elements, 2 * vec->elementSize + vec->elementSize);
 	if(NULL == vec-> elements)
 	{
-		fprintf("[ERROR] Memory reallocation error\n");
+		fprintf(stderr, "[ERROR] Memory reallocation error\n");
 		exit(1);
 	}
 }
 
-int AppendCopy(Vector *vec, void* element)
+int VectorAllocateOne(Vector *vec)
 {
 	if(vec->numberOfElements == vec->capacity)
 	{
 		Resize(vec);
 	}
-	char* newElementArea= ( ( char*) vec->elements) + (vec->elementSize)*(vec->numberOfElements);
-	memcpy(newElementArea, element, vec->elementSize);
 	(vec->numberOfElements)++;
 	return (vec->numberOfElements)-1;
 }
 
-void* GetElement(Vector *vec, int position)
+int VectorAppendCopy(Vector *vec, void* element)
+{
+	VectorAllocateOne(vec);
+	char* newElementArea= ( ( char*) vec->elements) + (vec->elementSize)*( (vec->numberOfElements)-1);
+	memcpy(newElementArea, element, vec->elementSize);
+	return (vec->numberOfElements)-1;
+}
+
+void* VectorGetElement(Vector *vec, int position)
 {
 /*	while(position > capacity)
 	{
@@ -51,6 +59,6 @@ void* GetElement(Vector *vec, int position)
 		fprintf(stderr, "[ERROR] Bad element access\n");
 		return NULL;
 	}
-	return ((char*)elements)+ ( position*(vec->elementSize) );
+	return ((char*)vec->elements)+ ( position*(vec->elementSize) );
 }
 

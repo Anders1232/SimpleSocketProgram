@@ -8,9 +8,10 @@ struct vector
 	int numberOfElements;
 	int capacity;
 };
-typedef vector Vector;
+typedef struct vector Vector;
 
 Vector* NewVector(int elementSize);
-int AppendCopy(Vector *vec, void* element);
-void* GetElement(Vector *vec, int position);
+int VectorAppendCopy(Vector *vec, void* element);
+int VectorAllocateOne(Vector *vec);
+void* VectorGetElement(Vector *vec, int position);
 #endif

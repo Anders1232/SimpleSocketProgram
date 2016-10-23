@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <time.h>
 #include <unistd.h>
 #include <sys/types.h> 
@@ -9,8 +10,9 @@
 #include <pthread.h>
 
 #include "ArgumentAnalizer.h"
+#include "vector.h"
 
-typedef FileDescriptor int;
+typedef int FileDescriptor;
 typedef struct sockaddr_in SocketAddress;
 #define BUFFER_SIZE 256
 
@@ -25,6 +27,7 @@ struct serverConnetion
 };
 typedef struct serverConnetion ServerConnection;
 
+
 void Error(const char *msg)
 {
 	perror(msg);
@@ -33,7 +36,7 @@ void Error(const char *msg)
 
 void UdpServer(int serverPort);
 void TcpServer(int serverPort);
-void* ServerConnection(void*);
+void* ConnectionEstabilished(void*);
 
 int main(int argc, char *argv[])
 {
@@ -81,52 +84,92 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
+static bool GetSetStopFlag(bool isToSet)
+{
+	static bool flag=false;
+	if(isToSet)
+	{
+		flag=true;
+	}
+	return flag;
+}
+
 void TcpServer(int serverPort)
 {
-	FileDescriptor socketFD, socketConnectionFD;
-	int clientAddressLenght, bytesReadOrWritten;
+	FileDescriptor serverSocketFD, socketConnectionFD;
 	socklen_t clientSocketLenght;
-	char buffer[BUFFER_SIZE];
 	SocketAddress serverAddress, clientAddress;
 	
-	socketFD= socket(AF_INET, SOCK_STREAM, 0);
-	if (socketFD < 0)
+	Vector *connectionsList= NewVector(sizeof(ServerConnection));
+	Vector *threadsList= NewVector(sizeof(pthread_t));
+	
+	serverSocketFD= socket(AF_INET, SOCK_STREAM, 0);
+	if (serverSocketFD < 0)
 	{
 		Error("[ERROR] Fail opening socket\n");
 	}
-	bzero((char *) &serverAddress, sizeof(serverAddress));
+	memset((char *) &serverAddress, 0, sizeof(serverAddress));
 	serverAddress.sin_family= AF_INET;
 	serverAddress.sin_addr.s_addr= INADDR_ANY;
 	serverAddress.sin_port = htons(serverPort);//htons = host to network endian
-	if(0 > ( bind(socketFD, (struct sockaddr *) &serverAddress, sizeof(serverAddress) ) ) )
+	if(0 > ( bind(serverSocketFD, (struct sockaddr *) &serverAddress, sizeof(serverAddress) ) ) )
 	{
 		Error("[ERROR] Binding failed\n");
 	}
-	listen(socketConnectionFD,5);
-	clilen = sizeof(cli_addr);
-	socketConnectionFD = accept(socketFD, (struct sockaddr *) &clientAddress, &clientSocketLenght);
-	ServerConnection *sc= malloc(sizeof(ServerConnection));
-	if(NULL == sc)
+	listen(serverSocketFD,5);
+	clientSocketLenght = sizeof(clientAddress);
+	while(!GetSetStopFlag(false))
 	{
-		Error("[ERROR] Alocation memory error\n");
+		socketConnectionFD = accept(serverSocketFD, (struct sockaddr *) &clientAddress, &clientSocketLenght);
+		if(socketConnectionFD < 0)
+		{
+			Error("[ERROR] Error on accept\n");
+			continue;
+		}
+		ServerConnection sc;/*= malloc(sizeof(ServerConnection));
+		if(NULL == sc)
+		{
+			Error("[ERROR] Alocation memory error\n");
+		}*/
+		sc.connectionFD= socketConnectionFD;
+		sc.clientAddress= clientAddress;
+		pthread_create(
+				VectorGetElement(threadsList, VectorAllocateOne(threadsList)), NULL,
+				ConnectionEstabilished, VectorGetElement(connectionsList, VectorAppendCopy(connectionsList, &sc) )
+		);
 	}
-	sc.connectionFD= socketConnectionFD;
-	sc.clientAddress= clientAddress;
-	pthread_create();
-	if(socketConnectionFD < 0)
+	for(int count =0; count < threadsList->numberOfElements; count++)
 	{
-		error("[ERROR] Error on accept\n");
+		pthread_t *tread= VectorGetElement(threadsList, count);
+		pthread_join( *tread, NULL);
 	}
-	bzero(buffer,BUFFER_SIZE);
-	bytesReadOrWritten= read(socketConnectionFD, buffer, BUFFER_SIZE-1);
-	if (n < 0)
+	close(serverSocketFD);
+}
+
+void* ConnectionEstabilished(void* arg)
+{
+	ServerConnection connection= *((ServerConnection*)arg);
+	char buffer[BUFFER_SIZE];
+	int bytesReadOrWritten;
+	
+	memset(buffer, 0,BUFFER_SIZE);
+	bytesReadOrWritten= read(connection.connectionFD, buffer, BUFFER_SIZE-1);
+	if (bytesReadOrWritten < 0)
 	{
 		Error("[ERROR] Error reading from socket\n");
 	}
 	printf("Recieved message: %s\n",buffer);
+	char* returnMessage= "Message recieved with sucess!";
+	bytesReadOrWritten= write(connection.connectionFD, returnMessage, strlen(returnMessage));
+	if(bytesReadOrWritten < 0)
+	{
+		Error("[ERROR] Error writing to socket\n");
+	}
+	close(connection.connectionFD);
+	return NULL;
 }
 
-void* ServerConnection(void* arg)
+void UdpServer(int serverPort)
 {
-	
+
 }
