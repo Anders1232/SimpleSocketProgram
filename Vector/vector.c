@@ -1,11 +1,5 @@
-struct vector
-{
-	void *elements;
-	int elementSize;
-	int numberOfElements;
-	int capacity;
-};
-typedef vector Vector;
+#include"vector.h"
+#include<stdio.h>
 
 Vector* NewVector(int elementSize)
 {
@@ -22,10 +16,10 @@ Vector* NewVector(int elementSize)
 	return ret;
 }
 
-void Resize(Vector * vec)
+static void Resize(Vector * vec)
 {
-	vec->capacity= 2*vec->capacity +1;
-	vec->elements= realloc(2 * vec->elementSize + vec->elementSize);
+	vec->capacity= 2 * (vec->capacity) + 1;
+	vec->elements= realloc(vec->elements, 2 * vec->elementSize + vec->elementSize);
 	if(NULL == vec-> elements)
 	{
 		fprintf("[ERROR] Memory reallocation error\n");
@@ -35,11 +29,14 @@ void Resize(Vector * vec)
 
 int AppendCopy(Vector *vec, void* element)
 {
-	if(vec->numberOfElements+1 == vec->capacity)
+	if(vec->numberOfElements == vec->capacity)
 	{
 		Resize(vec);
 	}
-	
+	char* newElementArea= ( ( char*) vec->elements) + (vec->elementSize)*(vec->numberOfElements);
+	memcpy(newElementArea, element, vec->elementSize);
+	(vec->numberOfElements)++;
+	return (vec->numberOfElements)-1;
 }
 
 void* GetElement(Vector *vec, int position)
