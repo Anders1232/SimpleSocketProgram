@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include <signal.h>
 
 #include "ArgumentAnalizer.h"
 #include "vector.h"
@@ -94,6 +95,12 @@ static bool GetSetStopFlag(bool isToSet)
 	return flag;
 }
 
+void RefuseNewConnections(int num)
+{
+	printf("\nRefusing new connections and waiting current connections to end\n");
+	GetSetStopFlag(true);
+}
+
 void TcpServer(int serverPort)
 {
 	FileDescriptor serverSocketFD, socketConnectionFD;
@@ -118,12 +125,15 @@ void TcpServer(int serverPort)
 	}
 	listen(serverSocketFD,5);
 	clientSocketLenght = sizeof(clientAddress);
+	
+	signal(SIGINT, RefuseNewConnections);
+	
 	while(!GetSetStopFlag(false))
 	{
 		socketConnectionFD = accept(serverSocketFD, (struct sockaddr *) &clientAddress, &clientSocketLenght);
 		if(socketConnectionFD < 0)
 		{
-			Error("[ERROR] Error on accept\n");
+			Error("[ERROR] Error on accept");
 			continue;
 		}
 		ServerConnection sc;/*= malloc(sizeof(ServerConnection));
