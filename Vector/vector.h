@@ -14,4 +14,5 @@ Vector* NewVector(int elementSize);
 int VectorAppendCopy(Vector *vec, void* element);
 int VectorAllocateOne(Vector *vec);
 void* VectorGetElement(Vector *vec, int position);
+Vector* DeleteVector(Vector* vec);
 #endif

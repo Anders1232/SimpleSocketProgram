@@ -181,7 +181,87 @@ void* ConnectionEstabilished(void* arg)
 	return NULL;
 }
 
+struct udpConnectionData
+{
+	FileDescriptor serverFD;
+	void *buffer;
+	int bufferSize;
+	SocketAddress client;
+	socklen_t clientAddressLenght;
+};
+typedef struct udpConnectionData UdpConnectionData;
+void* UdpConnection(void*);
+
 void UdpServer(int serverPort)
 {
+	FileDescriptor serverSocketFD;
+	socklen_t clientSocketLenght;
+	SocketAddress serverAddress, clientAddress;
 
+	Vector *connectionsList= NewVector(sizeof(UdpConnectionData
+));
+	Vector *threadsList= NewVector(sizeof(pthread_t));
+	
+	serverSocketFD= socket(AF_INET, SOCK_DGRAM, 0);
+	if (serverSocketFD < 0)
+	{
+		Error("[ERROR] Fail opening socket\n");
+	}
+	memset((char *) &serverAddress, 0, sizeof(serverAddress));
+	serverAddress.sin_family= AF_INET;
+	serverAddress.sin_addr.s_addr= INADDR_ANY;
+	serverAddress.sin_port = htons(serverPort);//htons = host to network endian
+	if(0 > ( bind(serverSocketFD, (struct sockaddr *) &serverAddress, sizeof(serverAddress) ) ) )
+	{
+		Error("[ERROR] Binding failed\n");
+	}
+	clientSocketLenght= sizeof(SocketAddress);
+
+	signal(SIGINT, RefuseNewConnections);
+	
+	while(!GetSetStopFlag(false))
+	{
+		char *buffer= malloc(BUFFER_SIZE);
+		int bytesReadOrWritten;
+		memset(buffer, 0,BUFFER_SIZE);
+		bytesReadOrWritten= recvfrom(serverSocketFD, buffer, BUFFER_SIZE, 0, (struct sockaddr*) &clientAddress, &clientSocketLenght);
+		if (bytesReadOrWritten < 0)
+		{
+			Error("[ERROR] Error reading from socket\n");
+		}
+		UdpConnectionData connection;
+		connection.serverFD= serverSocketFD;
+		connection.buffer= buffer;
+		connection.bufferSize= BUFFER_SIZE;
+		connection.client= clientAddress;
+		connection.clientAddressLenght= clientSocketLenght;
+
+		pthread_create(
+				VectorGetElement(threadsList, VectorAllocateOne(threadsList)), NULL,
+				UdpConnection, VectorGetElement(connectionsList, VectorAppendCopy(connectionsList, &connection) )
+		);
+	}
+	for(int count =0; count < threadsList->numberOfElements; count++)
+	{
+		pthread_t *tread= VectorGetElement(threadsList, count);
+		pthread_join( *tread, NULL);
+	}
+	close(serverSocketFD);
+	DeleteVector(threadsList);
+	DeleteVector(connectionsList);
+}
+
+void* UdpConnection(void* arg)
+{
+	UdpConnectionData connection= *((UdpConnectionData*)arg);
+	int bytesReadOrWritten;
+
+	printf("Message recieved: %s\n", (char*)connection.buffer);
+	char *responseMessage= "I got your message! Closing \"connection\"";
+	bytesReadOrWritten= sendto(connection.serverFD, responseMessage, sizeof(responseMessage), 0, (struct sockaddr*) &(connection.client), connection.clientAddressLenght);
+	if(bytesReadOrWritten < 0)
+	{
+		Error("[ERROR] Error writing to socket\n");
+	}
+	return NULL;
 }
