@@ -154,6 +154,8 @@ void TcpServer(int serverPort)
 		pthread_join( *tread, NULL);
 	}
 	close(serverSocketFD);
+	DeleteVector(threadsList);
+	DeleteVector(connectionsList);
 }
 
 void* ConnectionEstabilished(void* arg)

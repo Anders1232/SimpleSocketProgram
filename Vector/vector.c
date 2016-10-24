@@ -62,3 +62,9 @@ void* VectorGetElement(Vector *vec, int position)
 	return ((char*)vec->elements)+ ( position*(vec->elementSize) );
 }
 
+Vector* DeleteVector(Vector* vec)
+{
+	free(vec->elements);
+	free(vec);
+	return NULL;
+}
