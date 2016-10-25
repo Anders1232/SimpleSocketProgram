@@ -258,10 +258,11 @@ void* UdpConnection(void* arg)
 
 	printf("Message recieved: %s\n", (char*)connection.buffer);
 	char *responseMessage= "I got your message! Closing \"connection\"";
-	bytesReadOrWritten= sendto(connection.serverFD, responseMessage, sizeof(responseMessage), 0, (struct sockaddr*) &(connection.client), connection.clientAddressLenght);
+	bytesReadOrWritten= sendto(connection.serverFD, responseMessage, strlen(responseMessage), 0, (struct sockaddr*) &(connection.client), connection.clientAddressLenght);
 	if(bytesReadOrWritten < 0)
 	{
 		Error("[ERROR] Error writing to socket\n");
 	}
 	return NULL;
+	free(connection.buffer);
 }

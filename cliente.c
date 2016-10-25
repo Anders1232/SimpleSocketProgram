@@ -143,6 +143,42 @@ void TcpClient(char *hostName, int serverPort)
 
 void UdpClient(char* hostName, int serverPort)
 {
+	FileDescriptor clientSocketFD;
+	int bytesReadOrWritten;
+	unsigned int length;
+	SocketAddress server, origin;
+	HostEntry *host;
+	char buffer[BUFFER_SIZE];
 	
+	clientSocketFD= socket(AF_INET, SOCK_DGRAM, 0);
+	if (clientSocketFD < 0)
+	{
+		Error("[ERROR] Fail opening socket\n");
+	}
+	host= gethostbyname(hostName);
+	if (NULL == host)
+	{
+		fprintf(stderr, "[ERROR] Host not found\n");
+		exit(1);
+	}
+	server.sin_family= AF_INET;
+	server.sin_port= htons(serverPort);
+	length= sizeof(SocketAddress);
+	printf("Tell  me what you wanna send: ");
+	memset(buffer, 0, BUFFER_SIZE);
+	fgets(buffer, BUFFER_SIZE-1, stdin);
+	bytesReadOrWritten= sendto(clientSocketFD, buffer, strlen(buffer), 0, (struct sockaddr*) &server, length);
+	if(bytesReadOrWritten < 0)
+	{
+		Error("[ERROR] Error writing to socket\n");
+	}
+//	memset(buffer, 0, BUFFER_SIZE);
+	bytesReadOrWritten= recvfrom(clientSocketFD, buffer, BUFFER_SIZE, 0, (struct sockaddr*) &origin, &length);
+	if (bytesReadOrWritten < 0)
+	{
+		Error("[ERROR] Error reading from socket\n");
+	}
+	printf("Response recieved from server: %s\n", buffer);
+	close(clientSocketFD);
 }
 
