@@ -3,7 +3,7 @@
 #include<stdlib.h>
 #include<string.h>
 
-Vector* NewVector(int elementSize)
+Vector* NewVector(unsigned long int elementSize)
 {
 	Vector *ret= malloc(sizeof(Vector));
 	if(NULL == ret)
@@ -12,22 +12,16 @@ Vector* NewVector(int elementSize)
 		return NULL;
 	}
 	ret->elementSize= elementSize;
-	ret->numberOfElements=1;
-	ret->capacity= 1;
-	ret->elements= malloc(elementSize);
-	if(NULL == ret->elements)
-	{
-		fprintf(stderr, "[ERROR] Allocation Error\n");
-		free(ret);
-		return NULL;
-	}
+	ret->numberOfElements=0;
+	ret->capacity= 0;
+	ret->elements= NULL;
 	return ret;
 }
 
 static void Resize(Vector * vec)
 {
 	vec->capacity= 2 * (vec->capacity) + 1;
-	vec->elements= realloc(vec->elements, 2 * vec->elementSize + vec->elementSize);
+	vec->elements= realloc(vec->elements, (vec->capacity) * (vec->elementSize));
 	if(NULL == vec-> elements)
 	{
 		fprintf(stderr, "[ERROR] Memory reallocation error\n");
