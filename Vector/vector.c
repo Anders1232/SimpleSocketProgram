@@ -12,9 +12,15 @@ Vector* NewVector(int elementSize)
 		return NULL;
 	}
 	ret->elementSize= elementSize;
-	ret->numberOfElements=0;
-	ret->capacity= 0;
-	ret->elements= NULL;
+	ret->numberOfElements=1;
+	ret->capacity= 1;
+	ret->elements= malloc(elementSize);
+	if(NULL == ret->elements)
+	{
+		fprintf(stderr, "[ERROR] Allocation Error\n");
+		free(ret);
+		return NULL;
+	}
 	return ret;
 }
 

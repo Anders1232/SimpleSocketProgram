@@ -82,6 +82,7 @@ int main(int argc, char *argv[])
 	{
 		Error("[ERROR] Mode not known\n");
 	}
+	printf("Program exited sucesfull\n");
 	return 0;
 }
 
@@ -263,6 +264,6 @@ void* UdpConnection(void* arg)
 	{
 		Error("[ERROR] Error writing to socket\n");
 	}
-	return NULL;
 	free(connection.buffer);
+	return NULL;
 }
